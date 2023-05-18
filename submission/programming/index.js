@@ -7,22 +7,23 @@ const { User, Asset, Transaction, Balance, ExchangeRate, sequelize } = require('
 const { generateToken, verifyToken } = require('./auth');
 const app = express();
 let cors = require("cors");
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 const port = 3000;
 app.use(cors());
-// Sync the models with the database
+
+// Sync the models with database
 sequelize.sync().then(() => {
     console.log("Database synced");
 }).catch((err) => {
     console.error("Database sync failed:", err);
 });
 
-
 app.get('/', (req, res) => {
     res.send('Hello World!');
-}
-);
+});
+
 /**
  * @param {username:string,password:string,firstName:string,lastName:string,email:string} req.body
  */
@@ -47,9 +48,9 @@ app.post('/register', async (req, res) => {
                     res.status(500).json({ message: err.message });
                 });
         });
-
     });
 });
+
 /**
  * @param {username:string,password:string} req.body
  */
@@ -73,6 +74,7 @@ app.post('/login', async (req, res) => {
         }
     });
 });
+
 /**
  * @param {to:string,asset_symbol:string,amount:string} req.body #amount is wei unit 1 ether = 10^18 wei
  */
@@ -138,6 +140,7 @@ app.post('/transfer', async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 });
+
 // get balance of symbol example url : http://localhost:3000/balances/eth
 app.get('/balances/:symbol', async (req, res) => {
     const token = req.headers.authorization;
@@ -156,11 +159,9 @@ app.get('/balances/:symbol', async (req, res) => {
         const balance = await Balance.findOne({ where: { username: user.username, asset_symbol: symbol } });
         if (!balance) {
             return res.json({ amount: "0" });
-
         }
         return res.json({ amount: balance.amount });
     } catch (err) {
-
         res.status(401).json({ message: "Unauthorized" });
     }
 });
@@ -178,8 +179,6 @@ app.post('/admin/balances/increase', async (req, res) => {
         // verify token
         const decoded = verifyToken(token);
         console.log(decoded);
-
-
         // check user is admin
         if (decoded.role !== "admin") {
             res.status(403).json({ message: "Forbidden" });
@@ -192,7 +191,6 @@ app.post('/admin/balances/increase', async (req, res) => {
             res.status(400).json({ message: "Amount is incorrect" });
             return;
         }
-
         // check user is exists
         const user = await User.findOne({ where: { username: username.toLowerCase() } });
         if (!user) {
@@ -217,12 +215,10 @@ app.post('/admin/balances/increase', async (req, res) => {
             await balance.save();
         }
         return res.json({ message: "ok" });
-
     }
     catch (err) {
         console.log(err);
         if (err.message === "Token is not valid") {
-
             res.status(401).json({ message: "Unauthorized" });
         }
         else {
@@ -230,6 +226,7 @@ app.post('/admin/balances/increase', async (req, res) => {
         }
     }
 });
+
 /**
  * @param {username:string,asset_symbol:string,amount:string} req.body #amount is wei unit 1 ether = 10^18 wei
  */
@@ -260,7 +257,6 @@ app.post('/admin/balances/decrease', async (req, res) => {
             res.status(400).json({ message: "Username is incorrect" });
             return;
         }
-
         // check asset is exists
         const asset = await Asset.findOne({ where: { symbol: asset_symbol.toLowerCase() } });
         if (!asset) {
@@ -286,7 +282,6 @@ app.post('/admin/balances/decrease', async (req, res) => {
     catch (err) {
         console.log(err);
         if (err.message === "Token is not valid") {
-
             res.status(401).json({ message: "Unauthorized" });
         }
         else {
@@ -294,6 +289,7 @@ app.post('/admin/balances/decrease', async (req, res) => {
         }
     }
 });
+
 /**
  * @param {symbol:string,name:string,description:string,decimals:string} req.body
  */
@@ -331,7 +327,6 @@ app.post('/admin/assets/create', async (req, res) => {
     catch (err) {
         console.log(err);
         if (err.message === "Token is not valid") {
-
             res.status(401).json({ message: "Unauthorized" });
         }
         else {
@@ -339,6 +334,7 @@ app.post('/admin/assets/create', async (req, res) => {
         }
     }
 });
+
 /**
  * @param {symbol:string} req.params
  * @param {name:string,description:string,decimals:string} req.body
@@ -376,7 +372,6 @@ app.post('/admin/assets/update/:symbol', async (req, res) => {
     catch (err) {
         console.log(err);
         if (err.message === "Token is not valid") {
-
             res.status(401).json({ message: "Unauthorized" });
         }
         else {
@@ -384,6 +379,7 @@ app.post('/admin/assets/update/:symbol', async (req, res) => {
         }
     }
 });
+
 /**
  * @param {symbol:string} req.params
  */
@@ -424,6 +420,7 @@ app.post('/admin/assets/delete/:symbol', async (req, res) => {
         }
     }
 });
+
 app.get('/admin/assets/list', async (req, res) => {
     const token = req.headers.authorization;
     if (!token) {
@@ -446,9 +443,10 @@ app.get('/admin/assets/list', async (req, res) => {
         for (let i = 0; i < assets.length; i++) {
             const asset = assets[i];
             const balance = balances.find(b => b.asset_symbol === asset.symbol);
-            if (!balance) continue;
-            const user = users.find(u => u.username === balance.username);
-            if (!user) continue;
+            let store_balance = 0
+            if (balance) {
+                store_balance = balance.amount
+            }
             // check asset is exists in data
             const index = data.findIndex(d => d.symbol === asset.symbol);
             if (index === -1) {
@@ -457,7 +455,8 @@ app.get('/admin/assets/list', async (req, res) => {
                     symbol: asset.symbol,
                     name: asset.name,
                     description: asset.description,
-                    total: BigNumber.from(balance.amount).toString(),
+                    decimals: asset.decimals,
+                    total: BigNumber.from(store_balance).toString(),
                 });
             }
             else {
@@ -470,7 +469,6 @@ app.get('/admin/assets/list', async (req, res) => {
     catch (err) {
         console.log(err);
         if (err.message === "Token is not valid") {
-
             res.status(401).json({ message: "Unauthorized" });
         }
         else {
@@ -478,6 +476,7 @@ app.get('/admin/assets/list', async (req, res) => {
         }
     }
 });
+
 /**
  * @param {asset_home_symbol:string,asset_foreign_symbol:string,rate:string} req.body # rate is wei unit
  */
@@ -537,6 +536,7 @@ app.post('/admin/exchange/rate', async (req, res) => {
         }
     }
 });
+
 app.get('/admin/exchange/rate/list', async (req, res) => {
     const token = req.headers.authorization;
     if (!token) {
@@ -564,6 +564,7 @@ app.get('/admin/exchange/rate/list', async (req, res) => {
         }
     }
 });
+
 /**
  * @param {username:string,password:string,firstName:string,lastName:string,email:string} req.body
  */
@@ -582,14 +583,12 @@ app.post('/admin/register', async (req, res) => {
             // Store hash in your password DB.
             // create user
             User.create(user).then(() => {
-
                 res.json({ message: "ok" });
             }).catch(err => {
                 console.log(err);
                 res.status(400).json({ message: "Bad request" });
             });
         });
-
     });
 });
 
