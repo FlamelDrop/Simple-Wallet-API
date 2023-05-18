@@ -4,7 +4,6 @@ const DB_NAME = "simple_wallet";
 const DB_USER = "root";
 const DB_PASS = "123456";
 
-// Connect to database
 const sequelize = new Sequelize(
     DB_NAME,
     DB_USER,
