@@ -3,18 +3,17 @@ const DB_HOST = "db";
 const DB_NAME = "simple_wallet";
 const DB_USER = "root";
 const DB_PASS = "123456";
-// Connect to the database
+
+// Connect to database
 const sequelize = new Sequelize(
     DB_NAME,
     DB_USER,
     DB_PASS, {
     host: DB_HOST,
     dialect: 'mysql'
-}
-);
-//Start Define models 
+});
+
 const User = sequelize.define('User', {
-    // Model attributes are defined here
     username: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -42,8 +41,8 @@ const User = sequelize.define('User', {
         unique: true
     },
 });
+
 const Asset = sequelize.define('Asset', {
-    // Model attributes are defined here
     name: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -63,8 +62,8 @@ const Asset = sequelize.define('Asset', {
         allowNull: false
     },
 });
+
 const Balance = sequelize.define('Balance', {
-    // Model attributes are defined here
     username: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -78,8 +77,8 @@ const Balance = sequelize.define('Balance', {
         allowNull: false
     }
 });
+
 const Transaction = sequelize.define('Transaction', {
-    // Model attributes are defined here
     from: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -97,8 +96,8 @@ const Transaction = sequelize.define('Transaction', {
         allowNull: false
     }
 });
+
 const ExchangeRate = sequelize.define('ExchangeRate', {
-    // Model attributes are defined here
     asset_home_symbol: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -112,5 +111,5 @@ const ExchangeRate = sequelize.define('ExchangeRate', {
         allowNull: false
     }
 });
-//End Define models
+
 module.exports = { User, Asset, Balance, Transaction, ExchangeRate, sequelize };
